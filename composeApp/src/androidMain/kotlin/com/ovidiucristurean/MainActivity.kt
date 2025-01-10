@@ -1,29 +1,23 @@
 package com.ovidiucristurean
 
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.tooling.preview.Preview
-import com.ovidiucristurean.domain.model.RotationModel
-import com.ovidiucristurean.presentation.RotationSensorManager
+import com.ovidiucristurean.presentation.PhoneSensorManager
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var rotationSensorManager: RotationSensorManager
+    private lateinit var phoneSensorManager: PhoneSensorManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        rotationSensorManager = RotationSensorManagerWrapper(this)
+        phoneSensorManager = AndroidPhoneSensorManager(this)
 
         setContent {
             App(
-                rotationSensorManager = rotationSensorManager
+                phoneSensorManager = phoneSensorManager
             )
         }
     }

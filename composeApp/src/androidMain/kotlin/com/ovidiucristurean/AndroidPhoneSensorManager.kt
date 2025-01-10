@@ -6,42 +6,58 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import com.ovidiucristurean.domain.model.RotationModel
-import com.ovidiucristurean.presentation.RotationSensorManager
+import com.ovidiucristurean.domain.model.SensorData
+import com.ovidiucristurean.domain.model.SensorType
+import com.ovidiucristurean.presentation.PhoneSensorManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 
-class RotationSensorManagerWrapper(
+class AndroidPhoneSensorManager(
     context: Context,
-) : RotationSensorManager, SensorEventListener {
-    private var rotationVectorSensor: Sensor? = null
+) : PhoneSensorManager, SensorEventListener {
 
-    private var scope = CoroutineScope(Dispatchers.Main)
     private val sensorManager = context.getSystemService(SENSOR_SERVICE) as SensorManager
+    private var rotationVectorSensor: Sensor? =
+        sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+    private var scope: CoroutineScope? = null
 
-    init {
-        rotationVectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
-        sensorManager.registerListener(this, rotationVectorSensor, SensorManager.SENSOR_DELAY_UI)
+    private val _sensorData = MutableSharedFlow<SensorData>()
+    override val sensorData: SharedFlow<SensorData>
+        get() = _sensorData
+
+    override fun registerSensor(sensorType: SensorType) {
+        scope = CoroutineScope(Dispatchers.Main)
+        when (sensorType) {
+            SensorType.ROTATION_VECTOR -> {
+                sensorManager.registerListener(
+                    this,
+                    rotationVectorSensor,
+                    SensorManager.SENSOR_DELAY_UI
+                )
+            }
+
+            SensorType.ACCELEROMETER -> {
+
+            }
+        }
     }
 
-    private val _roll = MutableStateFlow(
-        RotationModel(
-            azimuth = 0.toDouble(),
-            pitch = 0.toDouble(),
-            roll = 0.toDouble()
-        )
-    )
+    override fun unregisterSensor(sensorType: SensorType) {
+        when (sensorType) {
+            SensorType.ROTATION_VECTOR -> {
+                sensorManager.unregisterListener(this, rotationVectorSensor)
+            }
 
-    override val rotation: StateFlow<RotationModel>
-        get() = _roll
+            SensorType.ACCELEROMETER -> {
 
-    override fun unregisterListener() {
-        sensorManager.unregisterListener(this)
-        scope.cancel()
+            }
+        }
+        scope?.cancel()
+        scope = null
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
@@ -56,9 +72,9 @@ class RotationSensorManagerWrapper(
             val pitch = Math.toDegrees(orientationAngles[1].toDouble())   // Rotation around X-axis
             val roll = Math.toDegrees(orientationAngles[2].toDouble())    // Rotation around Y-axis
 
-            scope.launch {
-                _roll.emit(
-                    RotationModel(
+            scope?.launch {
+                _sensorData.emit(
+                    SensorData.RotationData(
                         azimuth = azimuth,
                         pitch = pitch,
                         roll = roll

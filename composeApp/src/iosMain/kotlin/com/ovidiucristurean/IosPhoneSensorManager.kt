@@ -1,9 +1,9 @@
 package com.ovidiucristurean
 
-import com.ovidiucristurean.domain.model.RotationModel
-import com.ovidiucristurean.presentation.RotationSensorManager
+import com.ovidiucristurean.domain.model.SensorData
+import com.ovidiucristurean.domain.model.SensorType
+import com.ovidiucristurean.presentation.PhoneSensorManager
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,20 +12,23 @@ import platform.CoreMotion.CMMotionManager
 import platform.Foundation.NSOperationQueue
 import kotlin.math.PI
 
-class RotationSensorManagerWrapper : RotationSensorManager {
+class IosPhoneSensorManager : PhoneSensorManager {
 
     private val motionManager = CMMotionManager()
-    private val scope = CoroutineScope(Dispatchers.Main)
+    private var scope: CoroutineScope? = null
 
     private val _roll = MutableStateFlow(
-        RotationModel(
+        SensorData.RotationData(
             azimuth = 0.toDouble(),
             pitch = 0.toDouble(),
             roll = 0.toDouble()
         )
     )
 
-    init {
+    override val sensorData: StateFlow<SensorData>
+        get() = _roll
+
+    override fun registerSensor(sensorType: SensorType) {
         if (motionManager.isDeviceMotionAvailable()) {
             motionManager.deviceMotionUpdateInterval = 1.0 / 60.0 // 60 Hz
             motionManager.startDeviceMotionUpdatesToQueue(NSOperationQueue.mainQueue) { motion, error ->
@@ -35,9 +38,9 @@ class RotationSensorManagerWrapper : RotationSensorManager {
                     val pitch = convertLongToDegrees(attitude.pitch)  // Rotation around X-axis
                     val roll = convertLongToDegrees(attitude.roll)    // Rotation around Y-axis
 
-                    scope.launch {
+                    scope?.launch {
                         _roll.emit(
-                            RotationModel(
+                            SensorData.RotationData(
                                 azimuth = azimuth,
                                 pitch = pitch,
                                 roll = roll
@@ -57,12 +60,10 @@ class RotationSensorManagerWrapper : RotationSensorManager {
         }
     }
 
-    override val rotation: StateFlow<RotationModel>
-        get() = _roll
-
-    override fun unregisterListener() {
+    override fun unregisterSensor(sensorType: SensorType) {
         motionManager.stopDeviceMotionUpdates()
-        scope.cancel()
+        scope?.cancel()
+        scope = null
     }
 
 
