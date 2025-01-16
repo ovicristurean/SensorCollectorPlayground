@@ -1,7 +1,6 @@
-package com.ovidiucristurean.domain.model
+package com.ovidiucristurean.presentation.state
 
 sealed interface SensorData {
-
     data class RotationData(
         val azimuth: Double,
         val pitch: Double,
@@ -9,6 +8,8 @@ sealed interface SensorData {
     ) : SensorData
 
     data class AccelerometerData(
-        val acceleration: Float
+        val x: Float,
+        val y: Float,
+        val z: Float
     ) : SensorData
 }

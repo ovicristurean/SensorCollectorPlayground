@@ -5,7 +5,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import com.ovidiucristurean.presentation.PhoneSensorManager
+import com.ovidiucristurean.kmpsensorcollector.AndroidPhoneSensorManager
+import com.ovidiucristurean.kmpsensorcollector.PhoneSensorManager
 
 class MainActivity : ComponentActivity() {
 
