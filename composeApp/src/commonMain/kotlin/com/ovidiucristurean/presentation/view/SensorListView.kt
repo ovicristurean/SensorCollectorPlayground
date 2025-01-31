@@ -1,11 +1,13 @@
 package com.ovidiucristurean.presentation.view
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -18,7 +20,7 @@ fun SensorList(
     onSensorToggled: (String, Boolean) -> Unit
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -26,7 +28,6 @@ fun SensorList(
             val sensorItem: SensorCardInfo<SensorDataInfo> = sensorItems[index]
             SensorCard(
                 sensorCardInfo = sensorItem,
-                isToggledOn = sensorItem.isToggledOn,
                 onCheckedChanged = { isChecked ->
                     onSensorToggled(sensorItem.name, isChecked)
                 },
@@ -43,7 +44,7 @@ fun SensorList(
                                     ),
                                     rotationAxis = RotationAxis.ROLL,
                                     modifier = Modifier
-                                        .fillMaxWidth()
+                                        .width(200.dp)
                                         .height(100.dp)
                                 )
                             }

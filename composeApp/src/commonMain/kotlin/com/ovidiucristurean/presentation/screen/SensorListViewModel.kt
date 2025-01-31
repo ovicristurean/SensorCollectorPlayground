@@ -6,11 +6,11 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.ovidiucristurean.kmpsensorcollector.PhoneSensorManager
 import com.ovidiucristurean.kmpsensorcollector.model.SensorType
-import com.ovidiucristurean.presentation.state.ACCELEROMETER_ITEM_NAME
-import com.ovidiucristurean.presentation.state.AppScreenUiState
-import com.ovidiucristurean.presentation.state.ROTATION_ITEM_NAME
+import com.ovidiucristurean.presentation.state.ACCELEROMETER_NAME
+import com.ovidiucristurean.presentation.state.ROTATION_NAME
 import com.ovidiucristurean.presentation.state.SensorCardInfo
 import com.ovidiucristurean.presentation.state.SensorDataInfo
+import com.ovidiucristurean.presentation.state.SensorScreenUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -22,8 +22,26 @@ class SensorListViewModel(
     private val phoneSensorManager: PhoneSensorManager
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(AppScreenUiState())
-    val uiState: StateFlow<AppScreenUiState> = _uiState
+    private val _uiState = MutableStateFlow(SensorScreenUiState())
+    val uiState: StateFlow<SensorScreenUiState> = _uiState
+
+    init {
+        _uiState.update { currentState ->
+            val updatedSensors = currentState.sensors.mapValues { (sensorName, sensorCardInfo) ->
+                val sensorType = SensorType.valueOf(sensorName)
+                if (!phoneSensorManager.isSensorAvailable(sensorType)) {
+                    when (sensorCardInfo) {
+                        is SensorCardInfo.RotationCardInfo -> sensorCardInfo.copy(isAvailable = false)
+                        is SensorCardInfo.AccelerometerCardInfo -> sensorCardInfo.copy(isAvailable = false)
+                    }
+                } else {
+                    sensorCardInfo
+                }
+            }
+
+            currentState.copy(sensors = updatedSensors)
+        }
+    }
 
     fun onSensorToggled(sensorName: String, isToggledOn: Boolean) {
         if (isToggledOn) {
@@ -54,15 +72,14 @@ class SensorListViewModel(
     private fun register(sensorName: String) {
         toggleSensor(sensorName, true)
         when (sensorName) {
-            ROTATION_ITEM_NAME -> {
+            ROTATION_NAME -> {
                 viewModelScope.launch {
                     phoneSensorManager.rotationData.collectLatest { rotationData ->
-                        println("OVI: rotation ${rotationData.roll}")
                         _uiState.update { currentState ->
                             currentState.copy(
                                 sensors = currentState.sensors.toMutableMap().apply {
-                                    this[sensorName] =
-                                        (this[sensorName] as SensorCardInfo.RotationCardInfo).copy(
+                                    this[SensorType.ROTATION_VECTOR.name] =
+                                        (this[SensorType.ROTATION_VECTOR.name] as SensorCardInfo.RotationCardInfo).copy(
                                             data = SensorDataInfo.RotationDataInfo(
                                                 azimuth = rotationData.azimuth,
                                                 pitch = rotationData.pitch,
@@ -77,15 +94,14 @@ class SensorListViewModel(
                 phoneSensorManager.registerSensor(SensorType.ROTATION_VECTOR)
             }
 
-            ACCELEROMETER_ITEM_NAME -> {
+            ACCELEROMETER_NAME -> {
                 viewModelScope.launch {
                     phoneSensorManager.accelerometerData.collectLatest { accelerometerData ->
-                        println("OVI: accelerometer ${accelerometerData.accelerationX}")
                         _uiState.update { currentState ->
                             currentState.copy(
                                 sensors = currentState.sensors.toMutableMap().apply {
-                                    this[sensorName] =
-                                        (this[sensorName] as SensorCardInfo.AccelerometerCardInfo)
+                                    this[SensorType.ACCELEROMETER.name] =
+                                        (this[SensorType.ACCELEROMETER.name] as SensorCardInfo.AccelerometerCardInfo)
                                             .copy(
                                                 data = SensorDataInfo.AccelerometerDataInfo(
                                                     x = accelerometerData.accelerationX,
@@ -106,11 +122,11 @@ class SensorListViewModel(
 
     private fun unregister(sensorName: String) {
         val sensorType = when (sensorName) {
-            ROTATION_ITEM_NAME -> {
+            ROTATION_NAME -> {
                 SensorType.ROTATION_VECTOR
             }
 
-            ACCELEROMETER_ITEM_NAME -> {
+            ACCELEROMETER_NAME -> {
                 SensorType.ACCELEROMETER
             }
 
@@ -120,7 +136,7 @@ class SensorListViewModel(
         sensorType?.let {
             _uiState.update { currentState ->
                 val updatedSensors = currentState.sensors.mapValues { (sensorKey, sensorInfo) ->
-                    if (sensorKey == sensorName) {
+                    if (sensorKey == sensorType.name) {
                         sensorInfo.clearData()
                     } else {
                         sensorInfo
@@ -138,15 +154,15 @@ class SensorListViewModel(
             currentState.copy(
                 sensors = currentState.sensors.toMutableMap().apply {
                     when (sensorName) {
-                        ROTATION_ITEM_NAME ->
-                            this[sensorName] =
-                                (this[sensorName] as SensorCardInfo.RotationCardInfo).copy(
+                        ROTATION_NAME ->
+                            this[SensorType.ROTATION_VECTOR.name] =
+                                (this[SensorType.ROTATION_VECTOR.name] as SensorCardInfo.RotationCardInfo).copy(
                                     isToggledOn = isToggledOn
                                 )
 
-                        ACCELEROMETER_ITEM_NAME -> {
-                            this[sensorName] =
-                                (this[sensorName] as SensorCardInfo.AccelerometerCardInfo).copy(
+                        ACCELEROMETER_NAME -> {
+                            this[SensorType.ACCELEROMETER.name] =
+                                (this[SensorType.ACCELEROMETER.name] as SensorCardInfo.AccelerometerCardInfo).copy(
                                     isToggledOn = isToggledOn
                                 )
                         }

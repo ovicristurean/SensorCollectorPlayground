@@ -10,14 +10,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.Card
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Switch
-import androidx.compose.material.Text
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import com.ovidiucristurean.presentation.state.SensorCardInfo
 import com.ovidiucristurean.presentation.state.SensorDataInfo
@@ -32,7 +34,6 @@ import com.ovidiucristurean.presentation.state.SensorDataInfo
 @Composable
 fun SensorCard(
     sensorCardInfo: SensorCardInfo<SensorDataInfo>,
-    isToggledOn: Boolean,
     onCheckedChanged: (Boolean) -> Unit,
     demoView: (@Composable () -> Unit)? = null
 ) {
@@ -41,7 +42,9 @@ fun SensorCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
+            .padding(8.dp)
+            .alpha(if (sensorCardInfo.isAvailable) 1f else 0.3f),
+        shape = RoundedCornerShape(12.dp),
     ) {
         Column(
             modifier = Modifier
@@ -51,7 +54,7 @@ fun SensorCard(
         ) {
             Text(
                 text = sensorCardInfo.name,
-                style = MaterialTheme.typography.h3
+                style = MaterialTheme.typography.bodyLarge,
             )
             Spacer(modifier = Modifier.height(8.dp))
             if (sensorCardInfo.data != null) {
@@ -71,9 +74,11 @@ fun SensorCard(
             }
 
             Switch(
-                checked = isToggledOn,
+                checked = sensorCardInfo.isToggledOn,
                 onCheckedChange = { isChecked ->
-                    onCheckedChanged(isChecked)
+                    if (sensorCardInfo.isAvailable) {
+                        onCheckedChanged(isChecked)
+                    }
                 }
             )
 
@@ -83,20 +88,22 @@ fun SensorCard(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { isExpanded = !isExpanded }
+                        .clickable {
+                            if (sensorCardInfo.isAvailable) {
+                                isExpanded = !isExpanded
+                            }
+                        }
                         .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Text(
                         text = if (isExpanded) "Hide Demo" else "Show Demo",
-                        style = MaterialTheme.typography.body1,
-                        color = MaterialTheme.colors.primary
+                        style = MaterialTheme.typography.bodySmall,
                     )
                     Icon(
                         imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                         contentDescription = null,
-                        tint = MaterialTheme.colors.primary
                     )
                 }
 
